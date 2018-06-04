@@ -115,13 +115,23 @@ string signal()
    double slow = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 1);
    double slow_pre = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 2);
    double slow_pre3 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 3);
-
+   /*
    if((fast_pre >= levelHigh || fast_pre3>= levelHigh ) && fast_pre>slow_pre && fast<slow && fast <=90 &&(slow - fast >=2.5 || fast_pre - fast >= 5)){
       Print("signal=>down");
       return "down";
    }
-   
+   */
+   if((fast_pre >= levelHigh || fast_pre3>= levelHigh ) && fast_pre3>fast_pre && fast_pre>fast && fast<=90 && fast_pre3 > slow_pre3 && fast<slow){
+      Print("signal=>down");
+      return "down";
+   }
+   /*
    if((fast_pre <= levelLow || fast_pre3<= levelLow ) && fast_pre<slow_pre && fast>slow && fast >=10 && (fast - slow >=2.5 || fast - fast_pre >= 5)){
+      Print("signal=>up");
+      return "up";
+   }
+   */
+   if((fast_pre <= levelLow || fast_pre3<= levelLow ) && fast_pre3<fast_pre && fast_pre<fast && fast>=10 && fast_pre3 < slow_pre3 && fast>slow){
       Print("signal=>up");
       return "up";
    }
@@ -414,6 +424,10 @@ void subPrintDetails()
    sComment = sComment + "TrendType=" + TrendType + NL;
    sComment = sComment + sp;
    sComment = sComment + "lastTicketStatus=" + lastTicketStatus + NL;
+   sComment = sComment + sp;
+   sComment = sComment + "strSignal=" + strSignal +";" + "isSignalOpenOrder=" + isSignalOpenOrder +";" + "intTrigger=" + intTrigger + NL;
+   
+    
    
    Comment(sComment);
 }
