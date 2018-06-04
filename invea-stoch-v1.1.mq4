@@ -121,7 +121,7 @@ string signal()
       return "down";
    }
    */
-   if((fast_pre >= levelHigh || fast_pre3>= levelHigh ) && fast_pre3>fast_pre && fast_pre>fast && fast<=90 && fast_pre3 > slow_pre3 && fast<slow){
+   if((fast_pre >= levelHigh || fast_pre3>= levelHigh ) && fast_pre3>fast_pre && fast_pre>fast && fast<=82 && fast_pre3 > slow_pre3 && fast<slow){
       Print("signal=>down");
       return "down";
    }
@@ -131,7 +131,7 @@ string signal()
       return "up";
    }
    */
-   if((fast_pre <= levelLow || fast_pre3<= levelLow ) && fast_pre3<fast_pre && fast_pre<fast && fast>=10 && fast_pre3 < slow_pre3 && fast>slow){
+   if((fast_pre <= levelLow || fast_pre3<= levelLow ) && fast_pre3<fast_pre && fast_pre<fast && fast>=18 && fast_pre3 < slow_pre3 && fast>slow){
       Print("signal=>up");
       return "up";
    }
