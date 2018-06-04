@@ -265,17 +265,19 @@ void tpMethodNS(int ticket){
                }
                */
                //开单后10个柱子内，如果连续出现3个反向柱子则强平
+               /*
                if(pass <=12 && Close[3] < Open[3] && Close[2] < Open[2] && Close[1] < Open[1]){
                   objCTradeMgr.Close(ticket);
                }
+               */
                if(fast <levelLow && tradeProfit >= 3*Lots*10){
                   objCTradeMgr.Close(ticket);
                }
-               /*
+               ///*
                if(strSignal == "down" && tradeProfit >= 3*Lots*10){
                   objCTradeMgr.Close(ticket);
                }
-               */
+               //*/
             }
       }
       if(tradeType == OP_SELL){
@@ -296,17 +298,19 @@ void tpMethodNS(int ticket){
                }
             }
             */
+            /*
             if(pass <=12 && Close[3] > Open[3] && Close[2] > Open[2] && Close[1] > Open[1]){
                   objCTradeMgr.Close(ticket);
             }
+            */
             if(fast >levelHigh && tradeProfit >= 3*Lots*10){
                objCTradeMgr.Close(ticket);
             }
-            /*
+            ///*
             if(strSignal == "up" && tradeProfit >= 3*Lots*10){
                objCTradeMgr.Close(ticket);
             }
-            */
+            //*/
          }
       }
    }
@@ -333,9 +337,14 @@ void tpMethodSS(int ticket){
          if(tradeProfit > TPinMoney && Bid -ma>30*Pip){
             objCTradeMgr.Close(ticket);
          }
+         if(strSignal == "down" && tradeProfit >= 3*Lots*10){
+            objCTradeMgr.Close(ticket);
+         }
+         /*
          if(pass <=12 && Close[3] < Open[3] && Close[2] < Open[2] && Close[1] < Open[1]){
             objCTradeMgr.Close(ticket);
          }
+         */
       }
       if(tradeType == OP_SELL && intTrendTrriger > 3){
          double tema = iTEMA(NULL, 0, 10, 1);
@@ -346,10 +355,14 @@ void tpMethodSS(int ticket){
          if(tradeProfit > TPinMoney && ma - Ask>30*Pip){
             objCTradeMgr.Close(ticket);
          }
-         
+         if(strSignal == "up" && tradeProfit >= 3*Lots*10){
+            objCTradeMgr.Close(ticket);
+         }
+         /*
          if(pass <=12 && Close[3] > Open[3] && Close[2] > Open[2] && Close[1] > Open[1]){
             objCTradeMgr.Close(ticket);
          }
+         */
       }
    }
 }
