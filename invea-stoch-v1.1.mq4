@@ -520,7 +520,7 @@ void trailStop(){
                myStopLoss = OrderStopLoss();
                if(myStopLoss < openPrice && (dtNow-dt)/(PERIOD_M1*60) >1){
                   //刚开单后，每个柱子都移动止损，直至止损后有盈利则不进入
-                  newSL = Low[1] - 2.618*Pip;
+                  newSL = Low[1] - 2*Pip;
                   if(newSL > myStopLoss){
                      OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
                   }
@@ -565,7 +565,7 @@ void trailStop(){
                if(myStopLoss > openPrice && (dtNow-dt)/(PERIOD_M1*60) >1){
                   //刚开单后，每个柱子都移动止损，直至止损后有盈利则不进入
                   
-                  newSL = High[1] + 2.618*Pip;
+                  newSL = High[1] + 2*Pip;
                   if(newSL < myStopLoss){
                      OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
                   }
