@@ -367,7 +367,7 @@ void tpMethodSS(int ticket){
             objCTradeMgr.Close(ticket);
          }
          */
-         if(tradeProfit > TPinMoney && Bid -ma>30*Pip){  //
+         if(tradeProfit > TPinMoney ){  //&& Bid -ma>30*Pip
             objCTradeMgr.Close(ticket);
          }
          /*
@@ -389,7 +389,7 @@ void tpMethodSS(int ticket){
             objCTradeMgr.Close(ticket);
          }
          */
-         if(tradeProfit > TPinMoney && ma - Ask>30*Pip){  //
+         if(tradeProfit > TPinMoney ){  //&& ma - Ask>30*Pip
             objCTradeMgr.Close(ticket);
          }
          /*
