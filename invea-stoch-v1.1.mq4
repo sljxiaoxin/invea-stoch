@@ -44,6 +44,7 @@ bool   TrendLossed   = false; //当前趋势下发生了亏损
 int    lastTicket    = -1;
 int    lastTicketStatus = 2;    //0:持有中，1:止盈，-1：止损，2：不考虑了
 
+double AO,AO2,AO3;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -86,6 +87,7 @@ void OnTick()
          
      } else {
          getTrend();
+         getAO();
          //////////////////////////
          string strSg = signal();
          if(strSg != "none"){
@@ -121,7 +123,7 @@ string signal()
       return "down";
    }
    */
-   if((fast_pre >= levelHigh || fast_pre3>= levelHigh ) && fast_pre3>fast_pre && fast_pre>fast && fast<=82 && fast_pre3 > slow_pre3 && fast<slow){
+   if((fast_pre >= levelHigh || fast_pre3>= levelHigh ) && fast_pre3>fast_pre && fast_pre>fast && fast<=90 && fast_pre3 > slow_pre3 && fast<slow){
       Print("signal=>down");
       return "down";
    }
@@ -131,7 +133,7 @@ string signal()
       return "up";
    }
    */
-   if((fast_pre <= levelLow || fast_pre3<= levelLow ) && fast_pre3<fast_pre && fast_pre<fast && fast>=18 && fast_pre3 < slow_pre3 && fast>slow){
+   if((fast_pre <= levelLow || fast_pre3<= levelLow ) && fast_pre3<fast_pre && fast_pre<fast && fast>=10 && fast_pre3 < slow_pre3 && fast>slow){
       Print("signal=>up");
       return "up";
    }
@@ -152,7 +154,7 @@ void checkEntry(){
           Print("checkEntry:low value =",val,";Ask=",Ask,";diff=",(Ask - val));
           if(Ask - val >= 0 && Ask - val <= 2.5*Pip){
               Print("checkEntry:up < 2.5 pip");
-              entry(strSignal);
+              if(AO > AO2 && AO2>AO3) entry(strSignal);
           }
       }else{
          Print("checkEntry:low_index is -1");
@@ -166,7 +168,7 @@ void checkEntry(){
           double val=High[high_index];
           if(val - Bid >= 0 && val - Bid <= 2.5*Pip){
                Print("checkEntry:down < 2.5 pip");
-              entry(strSignal);
+              if(AO < AO2 && AO2<AO3) entry(strSignal);
           }
       }else{
          Print("checkEntry:high_index is -1");
@@ -249,9 +251,7 @@ void tpMethodNS(int ticket){
       
             if(tradeProfit >= TPinMoney){
                objCTradeMgr.Close(ticket);
-            }/*else if(pass >=25 && tradeProfit>0 && tradeProfit<=2*Lots*10){
-               objCTradeMgr.Close(ticket);
-            }*/else {
+            }else {
                double fast = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 1);
                double fast_pre = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 2);
                
@@ -270,22 +270,21 @@ void tpMethodNS(int ticket){
                   objCTradeMgr.Close(ticket);
                }
                */
+               /*
                if(fast <levelLow && tradeProfit >= 3*Lots*10){
                   objCTradeMgr.Close(ticket);
-               }
-               ///*
+               }*/
+               /*
                if(strSignal == "down" && tradeProfit >= 3*Lots*10){
                   objCTradeMgr.Close(ticket);
                }
-               //*/
+               */
             }
       }
       if(tradeType == OP_SELL){
          if(tradeProfit >= TPinMoney){
             objCTradeMgr.Close(ticket);
-         }/*else if(pass >=25 && tradeProfit>0 && tradeProfit<=2*Lots*10){
-            objCTradeMgr.Close(ticket);
-         }*/else {
+         }else {
             double fast = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 1);
             double fast_pre = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 2);
             
@@ -303,14 +302,15 @@ void tpMethodNS(int ticket){
                   objCTradeMgr.Close(ticket);
             }
             */
+            /*
             if(fast >levelHigh && tradeProfit >= 3*Lots*10){
                objCTradeMgr.Close(ticket);
-            }
-            ///*
+            }*/
+            /*
             if(strSignal == "up" && tradeProfit >= 3*Lots*10){
                objCTradeMgr.Close(ticket);
             }
-            //*/
+            */
          }
       }
    }
@@ -337,9 +337,11 @@ void tpMethodSS(int ticket){
          if(tradeProfit > TPinMoney && Bid -ma>30*Pip){
             objCTradeMgr.Close(ticket);
          }
+         /*
          if(strSignal == "down" && tradeProfit >= 3*Lots*10){
             objCTradeMgr.Close(ticket);
          }
+         */
          /*
          if(pass <=12 && Close[3] < Open[3] && Close[2] < Open[2] && Close[1] < Open[1]){
             objCTradeMgr.Close(ticket);
@@ -355,9 +357,10 @@ void tpMethodSS(int ticket){
          if(tradeProfit > TPinMoney && ma - Ask>30*Pip){
             objCTradeMgr.Close(ticket);
          }
+         /*
          if(strSignal == "up" && tradeProfit >= 3*Lots*10){
             objCTradeMgr.Close(ticket);
-         }
+         }*/
          /*
          if(pass <=12 && Close[3] > Open[3] && Close[2] > Open[2] && Close[1] > Open[1]){
             objCTradeMgr.Close(ticket);
@@ -421,6 +424,11 @@ void updateLastTicketStatus(){
    }
 }
 
+void getAO(){
+   AO = iAO(NULL,0,1);
+   AO2 = iAO(NULL,0,2);
+   AO3 = iAO(NULL,0,3);
+}
 
 void subPrintDetails()
 {
@@ -465,26 +473,73 @@ double TotalNetProfit()
 void trailStop(){
    if(isTrailStop){
      double newSL;
-     double openPrice;
+     double openPrice,myStopLoss;
+     datetime dt,dtNow;
      for (int i=0; i<OrdersTotal(); i++) {
       if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) {     
          if(OrderMagicNumber() == MagicNumber && OrderSymbol() == Symbol()){
-            if(OrderType() == OP_BUY && TrendType == "long"){
-               
-               //连续3个阳柱子移动止损
-               if(Close[3]>Open[3] && Close[2]>Open[2] && Close[1]>Open[1]){
-                  openPrice = OrderOpenPrice();
-                  newSL = Open[1] - 2*Pip;
-                  if(newSL - openPrice>=2*Pip){
+            if(OrderType() == OP_BUY ){
+               openPrice = OrderOpenPrice();
+               myStopLoss = OrderStopLoss();
+               if(TrendType == "long"){
+                  //连续3个阳柱子移动止损
+                  if(Close[3]>Open[3] && Close[2]>Open[2] && Close[1]>Open[1]){
+                     newSL = Open[1] - 2*Pip;
+                     if(newSL - openPrice>=2*Pip){
+                        OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
+                     }
+                  }else{
+                     //过40个柱子，每2个阳柱可上移
+                     dt = OrderOpenTime();
+                     dtNow = iTime(NULL,PERIOD_M1,1);
+                     if( (dtNow-dt)/(PERIOD_M1*60) >40 && Close[2]>Open[2] && Close[1]>Open[1]){
+                        newSL = Open[1] - 2*Pip;
+                        if(newSL - openPrice>=2*Pip){
+                           OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
+                        }
+                     }
+                  }
+               }
+               //盈利超过2.5Pip则向上提止损
+               if(myStopLoss - openPrice <2*Pip && Close[1] - openPrice > 2.5*Pip){
+                  if(Open[1] - openPrice >0){
+                     newSL = Open[1] - 2*Pip;
+                     OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
+                  }else{
+                     newSL = myStopLoss + 3*Pip;
                      OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
                   }
                }
+               
+               
             }
-            if(OrderType() == OP_SELL && TrendType == "short"){
-	            if(Close[3]<Open[3] && Close[2]<Open[2] && Close[1]<Open[1]){
-                  openPrice = OrderOpenPrice();
-                  newSL = Open[1] + 2*Pip;
-                  if(openPrice - newSL>=2*Pip){
+            if(OrderType() == OP_SELL){
+               openPrice = OrderOpenPrice();
+               myStopLoss = OrderStopLoss();
+               if(TrendType == "short"){
+   	            if(Close[3]<Open[3] && Close[2]<Open[2] && Close[1]<Open[1]){
+                     newSL = Open[1] + 2*Pip;
+                     if(openPrice - newSL>=2*Pip){
+                        OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
+                     }
+                  }else{
+                     //过40个柱子，每2个阳柱可上移
+                     dt = OrderOpenTime();
+                     dtNow = iTime(NULL,PERIOD_M1,1);
+                     if( (dtNow-dt)/(PERIOD_M1*60) >40 && Close[2]<Open[2] && Close[1]<Open[1]){
+                        newSL = Open[1] + 2*Pip;
+                        if(openPrice - newSL>=2*Pip){
+                           OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
+                        }
+                     }
+                  }
+               }
+               if(openPrice - myStopLoss <2*Pip && openPrice - Close[1]  > 2.5*Pip){
+                  if(openPrice - Open[1] >0){
+                     newSL = Open[1] + 2*Pip;
+                     OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
+                  }else{
+                     newSL = myStopLoss - 3*Pip;
                      OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
                   }
                }
