@@ -20,7 +20,7 @@
 
 extern int       MagicNumber     = 20180602;
 extern double    Lots            = 0.3;
-extern double    TPinMoney       = 45;          //Net TP (money)
+extern double    TPinMoney       = 30;          //Net TP (money)
 extern int       intSL           = 6;            //止损点数，不用加0
 extern double    distance        = 5;   //加仓间隔点数
 
@@ -81,13 +81,14 @@ void OnTick()
 {
      updateLastTicketStatus();
      subPrintDetails();
-     checkEntry();
+     checkEntryStoch();
      //M1产生交易
      if(CheckTimeM1==iTime(NULL,PERIOD_M1,0)){
          
      } else {
          getTrend();
          getAO();
+         //checkEntryTEMA();
          //////////////////////////
          string strSg = signal();
          if(strSg != "none"){
@@ -123,7 +124,7 @@ string signal()
       return "down";
    }
    */
-   if((fast_pre >= levelHigh || fast_pre3>= levelHigh ) && fast_pre3>fast_pre && fast_pre>fast && fast<=90 && fast_pre3 > slow_pre3 && fast<slow){
+   if((fast_pre >= levelHigh || fast_pre3>= levelHigh ) && fast_pre3>fast_pre && fast_pre>fast && fast<=82 && fast_pre3 > slow_pre3 && fast<slow){
       Print("signal=>down");
       return "down";
    }
@@ -133,7 +134,7 @@ string signal()
       return "up";
    }
    */
-   if((fast_pre <= levelLow || fast_pre3<= levelLow ) && fast_pre3<fast_pre && fast_pre<fast && fast>=10 && fast_pre3 < slow_pre3 && fast>slow){
+   if((fast_pre <= levelLow || fast_pre3<= levelLow ) && fast_pre3<fast_pre && fast_pre<fast && fast>=18 && fast_pre3 < slow_pre3 && fast>slow){
       Print("signal=>up");
       return "up";
    }
@@ -143,7 +144,7 @@ string signal()
 
 
 //交易判断
-void checkEntry(){
+void checkEntryStoch(){
    if(isSignalOpenOrder)return;
    if(lastTicketStatus == -1)return;   //最后一order在当前trend下发生了loss，则不open
    if(strSignal == "up" && intTrigger<=3){
@@ -152,9 +153,9 @@ void checkEntry(){
       if(low_index!=-1){
           double val=Low[low_index];
           Print("checkEntry:low value =",val,";Ask=",Ask,";diff=",(Ask - val));
-          if(Ask - val >= 0 && Ask - val <= 2.5*Pip){
+          if(Ask - val >= 0.5*Pip && Ask - val <= 3*Pip){
               Print("checkEntry:up < 2.5 pip");
-              if(AO > AO2 && AO2>AO3) entry(strSignal);
+              if(AO > AO2 && AO>AO3) entry(strSignal, MathFloor((Ask - val)/Pip));
           }
       }else{
          Print("checkEntry:low_index is -1");
@@ -166,9 +167,34 @@ void checkEntry(){
       int high_index=iHighest(NULL,0,MODE_HIGH,5,1);
       if(high_index!=-1){
           double val=High[high_index];
-          if(val - Bid >= 0 && val - Bid <= 2.5*Pip){
+          if(val - Bid >= 0.5*Pip && val - Bid <= 3*Pip){
                Print("checkEntry:down < 2.5 pip");
-              if(AO < AO2 && AO2<AO3) entry(strSignal);
+              if(AO < AO2 && AO<AO3) entry(strSignal, MathFloor((val - Bid)/Pip));
+          }
+      }else{
+         Print("checkEntry:high_index is -1");
+      }
+   }
+}
+
+void checkEntryTEMA(){
+   if(TrendType == "long" && intTrendTrriger<=1){
+      int low_index=iLowest(NULL,0,MODE_LOW,5,1);
+      if(low_index!=-1){
+          double val=Low[low_index];
+          if(Ask - val >= 0 && Ask - val <= 6.5*Pip){
+              if(AO > AO2 && AO>AO3) entry("up", MathFloor((Ask - val)/Pip));
+          }
+      }else{
+         Print("checkEntry:low_index is -1");
+      }
+   }
+   if(TrendType == "short" && intTrendTrriger<=1){
+      int high_index=iHighest(NULL,0,MODE_HIGH,5,1);
+      if(high_index!=-1){
+          double val=High[high_index];
+          if(val - Bid >= 0 && val - Bid <= 6.5*Pip){
+              if(AO < AO2 && AO<AO3) entry("down", MathFloor((val - Bid)/Pip));
           }
       }else{
          Print("checkEntry:high_index is -1");
@@ -177,10 +203,11 @@ void checkEntry(){
 }
 
 //
-void entry(string type){
+void entry(string type, double sl){
    if(isSignalOpenOrder)return;
    if(objCTradeMgr.Total()>0)return ;
    int t;
+   //intSL = (int)sl;
    if(strSignal == "up"){
       Print("entry:up");
       t = objCTradeMgr.Buy(Lots, intSL, 0, "up");
@@ -331,10 +358,12 @@ void tpMethodSS(int ticket){
       if(tradeType == OP_BUY && intTrendTrriger > 3){
          double tema = iTEMA(NULL, 0, 10, 1);
          double ma = iMA(NULL,0,10,0,MODE_EMA,PRICE_CLOSE,1);
+         /*
          if(tradeProfit >0 && tema - Close[1]>2*Pip && Close[1]-Ask>=2*Pip){
             objCTradeMgr.Close(ticket);
          }
-         if(tradeProfit > TPinMoney && Bid -ma>30*Pip){
+         */
+         if(tradeProfit > TPinMoney ){  //&& Bid -ma>30*Pip
             objCTradeMgr.Close(ticket);
          }
          /*
@@ -351,10 +380,12 @@ void tpMethodSS(int ticket){
       if(tradeType == OP_SELL && intTrendTrriger > 3){
          double tema = iTEMA(NULL, 0, 10, 1);
          double ma = iMA(NULL,0,10,0,MODE_EMA,PRICE_CLOSE,1);
+         /*
          if(tradeProfit >0 && Close[1] - tema >2*Pip && Bid - Close[1]>=2*Pip){
             objCTradeMgr.Close(ticket);
          }
-         if(tradeProfit > TPinMoney && ma - Ask>30*Pip){
+         */
+         if(tradeProfit > TPinMoney ){  //&& ma - Ask>30*Pip
             objCTradeMgr.Close(ticket);
          }
          /*
@@ -506,8 +537,10 @@ void trailStop(){
                      newSL = Open[1] - 2*Pip;
                      OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
                   }else{
+                  /*
                      newSL = myStopLoss + 3*Pip;
                      OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
+                     */
                   }
                }
                
@@ -539,8 +572,10 @@ void trailStop(){
                      newSL = Open[1] + 2*Pip;
                      OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
                   }else{
+                     /*
                      newSL = myStopLoss - 3*Pip;
                      OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
+                     */
                   }
                }
             }
