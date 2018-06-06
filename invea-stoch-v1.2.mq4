@@ -24,8 +24,8 @@ extern double    TPinMoney       = 30;          //Net TP (money)
 extern int       intSL           = 6;            //止损点数，不用加0
 extern double    distance        = 5;   //加仓间隔点数
 
-extern double    levelHigh      = 85;
-extern double    levelLow       = 15;
+extern double    levelHigh      = 81;
+extern double    levelLow       = 19;
 extern bool      isTrailStop    = true;
 
 
@@ -110,35 +110,68 @@ void OnTick()
  //信号检测
 string signal()
 {
-
-   double fast = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 1);
-   double fast_pre = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 2);
-   double fast_pre3 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 3);
-   
-   double slow = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 1);
-   double slow_pre = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 2);
-   double slow_pre3 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 3);
-   /*
-   if((fast_pre >= levelHigh || fast_pre3>= levelHigh ) && fast_pre>slow_pre && fast<slow && fast <=90 &&(slow - fast >=2.5 || fast_pre - fast >= 5)){
-      Print("signal=>down");
-      return "down";
+   double fast[5];
+   double slow[5];
+   int j;
+   for( j=0;j<5;j++) {
+      fast[j] = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, j+1);
    }
-   */
-   if((fast_pre >= levelHigh || fast_pre3>= levelHigh ) && fast_pre3>fast_pre && fast_pre>fast && fast<=82 && fast_pre3 > slow_pre3 && fast<slow){
-      Print("signal=>down");
-      return "down";
+   for( j=0;j<5;j++) {
+      slow[j] = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, j+1);
    }
    /*
-   if((fast_pre <= levelLow || fast_pre3<= levelLow ) && fast_pre<slow_pre && fast>slow && fast >=10 && (fast - slow >=2.5 || fast - fast_pre >= 5)){
-      Print("signal=>up");
-      return "up";
-   }
-   */
-   if((fast_pre <= levelLow || fast_pre3<= levelLow ) && fast_pre3<fast_pre && fast_pre<fast && fast>=18 && fast_pre3 < slow_pre3 && fast>slow){
-      Print("signal=>up");
-      return "up";
-   }
+   double fast1 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 1);
+   double fast2 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 2);
+   double fast3 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 3);
+   double fast4 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 4);
+   double fast5 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 5);
    
+   double slow1 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 1);
+   double slow2 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 2);
+   double slow3 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 3);
+   double slow4 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 4);
+   double slow5 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 5);
+   */
+   double highest_fast=-1,highest_slow=-1;
+   double lowest_fast=100,lowest_slow=100;
+   int iH=-1,iL=-1,iOut=-1;
+   if(fast[0] < 80 && fast[1] > 80){
+      for( j=0;j<5;j++) {
+         if(fast[j]>highest_fast){
+            highest_fast=fast[j];
+            iH = j;
+         }
+         if(slow[j] >highest_slow){
+            highest_slow = slow[j];
+         }
+         if(fast[j] < 80 && j>1 && iOut == -1){
+            iOut = j;
+         }
+      }
+      if(iOut != -1 && highest_fast>=levelHigh && highest_slow>80){
+         Print("signal=>down");
+         return "down";
+      }
+   }
+   if(fast[0] >20 && fast[1] < 20){
+      for( j=0;j<5;j++) {
+         if(fast[j]<lowest_fast){
+            lowest_fast=fast[j];
+            iH = j;
+         }
+         if(slow[j] <lowest_slow){
+            lowest_slow = slow[j];
+         }
+         if(fast[j] > 20 && j>1 && iOut == -1){
+            iOut = j;
+         }
+      }
+      if(iOut != -1 && lowest_fast<=levelLow && lowest_slow<20){
+        Print("signal=>up");
+         return "up";
+      }
+   }
+  
    return "none";
 }
 
@@ -147,13 +180,13 @@ string signal()
 void checkEntryStoch(){
    if(isSignalOpenOrder)return;
    if(lastTicketStatus == -1)return;   //最后一order在当前trend下发生了loss，则不open
-   if(strSignal == "up" && intTrigger<=3){
+   if(strSignal == "up" && intTrigger<=2){
       Print("checkEntry:up");
-      int low_index=iLowest(NULL,0,MODE_LOW,5,1);
+      int low_index=iLowest(NULL,0,MODE_LOW,3,1);
       if(low_index!=-1){
           double val=Low[low_index];
           Print("checkEntry:low value =",val,";Ask=",Ask,";diff=",(Ask - val));
-          if(Ask - val >= 0.2*Pip && Ask - val <= 2.5*Pip){
+          if(Ask - val >= 0.2*Pip && Ask - val <= 5*Pip){
               Print("checkEntry:up < 2.5 pip");
               if(AO > AO2 && AO>AO3) 
               entry(strSignal, MathFloor((Ask - val)/Pip));
@@ -163,12 +196,12 @@ void checkEntryStoch(){
       }
    }
    
-   if(strSignal == "down" && intTrigger<=3){
+   if(strSignal == "down" && intTrigger<=2){
       Print("checkEntry:down");
-      int high_index=iHighest(NULL,0,MODE_HIGH,5,1);
+      int high_index=iHighest(NULL,0,MODE_HIGH,3,1);
       if(high_index!=-1){
           double val=High[high_index];
-          if(val - Bid >= 0.2*Pip && val - Bid <= 2.5*Pip){
+          if(val - Bid >= 0.2*Pip && val - Bid <= 5*Pip){
                Print("checkEntry:down < 2.5 pip");
               if(AO < AO2 && AO<AO3) 
               entry(strSignal, MathFloor((val - Bid)/Pip));
@@ -237,176 +270,38 @@ void entry(string type, double sl){
 //check exit
 void tpMgr(){
    if(objCTradeMgr.Total()<=0)return ;
-   int tradeType,tradeTicket;
+   int tradeType,pass,tradeTicket;
+   double tradePrice,tradeProfit;
+   datetime dt,dtNow;
    for(int cnt=0;cnt<OrdersTotal();cnt++){
       OrderSelect(cnt,SELECT_BY_POS,MODE_TRADES);
       if(OrderType()<=OP_SELL &&
          OrderSymbol()==Symbol() &&
          OrderMagicNumber()==MagicNumber){
-            tradeType = OrderType();
             tradeTicket = OrderTicket();
-            tpMgrDispatch(tradeType,tradeTicket);
+            dt = OrderOpenTime();
+            tradeType = OrderType();
+            tradePrice = OrderOpenPrice();
+            tradeProfit = OrderProfit()- OrderCommission() - OrderSwap(); //账面-手续费-库存费
+            dtNow = iTime(NULL,PERIOD_M1,1);
+            pass = (dtNow-dt)/(PERIOD_M1*60);
+            if(tradeType == OP_BUY){
+               //double tema = iTEMA(NULL, 0, 10, 1);
+               //double ma = iMA(NULL,0,10,0,MODE_EMA,PRICE_CLOSE,1);
+               if(tradeProfit > TPinMoney ){  //&& Bid -ma>30*Pip
+                  objCTradeMgr.Close(tradeTicket);
+               }
+            }
+            if(tradeType == OP_SELL){
+               //double tema = iTEMA(NULL, 0, 10, 1);
+               //double ma = iMA(NULL,0,10,0,MODE_EMA,PRICE_CLOSE,1);
+               if(tradeProfit > TPinMoney ){  //&& ma - Ask>30*Pip
+                  objCTradeMgr.Close(tradeTicket);
+               }
+            }
       }
    }
 }
-
-void tpMgrDispatch(int type, int ticket){
-   
-   if(type == OP_BUY && TrendType == "short"){
-      tpMethodNS(ticket); 
-   }
-   if(type == OP_SELL && TrendType == "long"){
-      tpMethodNS(ticket); 
-   }
-   if(type == OP_BUY && TrendType == "long"){
-      tpMethodSS(ticket);
-   }
-   if(type == OP_SELL && TrendType == "short"){
-      tpMethodSS(ticket);
-   }
-}
-
-//ni shi
-void tpMethodNS(int ticket){
-   int tradeType,pass;
-   double tradePrice,tradeProfit;
-   datetime dt,dtNow;
-   if(OrderSelect(ticket, SELECT_BY_TICKET)==true){
-      dt = OrderOpenTime();
-      tradeType = OrderType();
-      tradePrice = OrderOpenPrice();
-      tradeProfit = OrderProfit()- OrderCommission() - OrderSwap(); //账面-手续费-库存费
-      dtNow = iTime(NULL,PERIOD_M1,1);
-      pass = (dtNow-dt)/(PERIOD_M1*60);
-      if(tradeType == OP_BUY){
-      
-            if(tradeProfit >= TPinMoney){
-               objCTradeMgr.Close(ticket);
-            }else {
-               double fast = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 1);
-               double fast_pre = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 2);
-               
-               double slow = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 1);
-               double slow_pre = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 2);
-               /*
-               if(fast_pre > slow_pre && fast < slow && fast<20){
-                  if(tradeProfit<0 && tradeProfit>=-1*2.5*Lots*10){
-                     objCTradeMgr.Close(ticket);
-                  }
-               }
-               */
-               //开单后10个柱子内，如果连续出现3个反向柱子则强平
-               /*
-               if(pass <=12 && Close[3] < Open[3] && Close[2] < Open[2] && Close[1] < Open[1]){
-                  objCTradeMgr.Close(ticket);
-               }
-               */
-               /*
-               if(fast <levelLow && tradeProfit >= 3*Lots*10){
-                  objCTradeMgr.Close(ticket);
-               }*/
-               /*
-               if(strSignal == "down" && tradeProfit >= 3*Lots*10){
-                  objCTradeMgr.Close(ticket);
-               }
-               */
-            }
-      }
-      if(tradeType == OP_SELL){
-         if(tradeProfit >= TPinMoney){
-            objCTradeMgr.Close(ticket);
-         }else {
-            double fast = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 1);
-            double fast_pre = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 2);
-            
-            double slow = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 1);
-            double slow_pre = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 2);
-            /*
-            if(fast_pre < slow_pre && fast > slow && fast > 80){
-               if(tradeProfit<0 && tradeProfit>=-1*2.5*Lots*10){
-                  objCTradeMgr.Close(ticket);
-               }
-            }
-            */
-            /*
-            if(pass <=12 && Close[3] > Open[3] && Close[2] > Open[2] && Close[1] > Open[1]){
-                  objCTradeMgr.Close(ticket);
-            }
-            */
-            /*
-            if(fast >levelHigh && tradeProfit >= 3*Lots*10){
-               objCTradeMgr.Close(ticket);
-            }*/
-            /*
-            if(strSignal == "up" && tradeProfit >= 3*Lots*10){
-               objCTradeMgr.Close(ticket);
-            }
-            */
-         }
-      }
-   }
-}
-
-//shun shi
-void tpMethodSS(int ticket){
-   int tradeType,pass;
-   double tradePrice,tradeProfit;
-   datetime dt,dtNow;
-   if(OrderSelect(ticket, SELECT_BY_TICKET)==true){
-      dt = OrderOpenTime();
-      tradeType = OrderType();
-      tradePrice = OrderOpenPrice();
-      tradeProfit = OrderProfit()- OrderCommission() - OrderSwap(); //账面-手续费-库存费
-      dtNow = iTime(NULL,PERIOD_M1,1);
-      pass = (dtNow-dt)/(PERIOD_M1*60);
-      if(tradeType == OP_BUY && intTrendTrriger > 3){
-         double tema = iTEMA(NULL, 0, 10, 1);
-         double ma = iMA(NULL,0,10,0,MODE_EMA,PRICE_CLOSE,1);
-         /*
-         if(tradeProfit >0 && tema - Close[1]>2*Pip && Close[1]-Ask>=2*Pip){
-            objCTradeMgr.Close(ticket);
-         }
-         */
-         if(tradeProfit > TPinMoney ){  //&& Bid -ma>30*Pip
-            objCTradeMgr.Close(ticket);
-         }
-         /*
-         if(strSignal == "down" && tradeProfit >= 3*Lots*10){
-            objCTradeMgr.Close(ticket);
-         }
-         */
-         /*
-         if(pass <=12 && Close[3] < Open[3] && Close[2] < Open[2] && Close[1] < Open[1]){
-            objCTradeMgr.Close(ticket);
-         }
-         */
-      }
-      if(tradeType == OP_SELL && intTrendTrriger > 3){
-         double tema = iTEMA(NULL, 0, 10, 1);
-         double ma = iMA(NULL,0,10,0,MODE_EMA,PRICE_CLOSE,1);
-         /*
-         if(tradeProfit >0 && Close[1] - tema >2*Pip && Bid - Close[1]>=2*Pip){
-            objCTradeMgr.Close(ticket);
-         }
-         */
-         if(tradeProfit > TPinMoney ){  //&& ma - Ask>30*Pip
-            objCTradeMgr.Close(ticket);
-         }
-         /*
-         if(strSignal == "up" && tradeProfit >= 3*Lots*10){
-            objCTradeMgr.Close(ticket);
-         }*/
-         /*
-         if(pass <=12 && Close[3] > Open[3] && Close[2] > Open[2] && Close[1] > Open[1]){
-            objCTradeMgr.Close(ticket);
-         }
-         */
-      }
-   }
-}
-
-
-
 
 
 void getTrend(){
@@ -518,13 +413,15 @@ void trailStop(){
                dtNow = iTime(NULL,PERIOD_M1,1);
                openPrice = OrderOpenPrice();
                myStopLoss = OrderStopLoss();
-               if(myStopLoss < openPrice && (dtNow-dt)/(PERIOD_M1*60) >10){
+               /*
+               if(myStopLoss < openPrice && (dtNow-dt)/(PERIOD_M1*60) >1){
                   //刚开单后，每个柱子都移动止损，直至止损后有盈利则不进入
                   newSL = Low[1] - 3*Pip;
                   if(newSL > myStopLoss){
                      OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
                   }
                }
+               */
                if(TrendType == "long"){
                   //连续3个阳柱子移动止损
                   if(Close[3]>Open[3] && Close[2]>Open[2] && Close[1]>Open[1]){
@@ -562,7 +459,8 @@ void trailStop(){
                dtNow = iTime(NULL,PERIOD_M1,1);
                openPrice = OrderOpenPrice();
                myStopLoss = OrderStopLoss();
-               if(myStopLoss > openPrice && (dtNow-dt)/(PERIOD_M1*60) >10){
+               /*
+               if(myStopLoss > openPrice && (dtNow-dt)/(PERIOD_M1*60) >1){
                   //刚开单后，每个柱子都移动止损，直至止损后有盈利则不进入
                   
                   newSL = High[1] + 3*Pip;
@@ -570,6 +468,7 @@ void trailStop(){
                      OrderModify(OrderTicket(),openPrice,newSL, 0, 0);
                   }
                }
+               */
                if(TrendType == "short"){
    	            if(Close[3]<Open[3] && Close[2]<Open[2] && Close[1]<Open[1]){
                      newSL = Open[1] + 2*Pip;
