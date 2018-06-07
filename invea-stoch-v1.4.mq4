@@ -16,7 +16,7 @@
 extern int       MagicNumber     = 20180602;
 extern double    Lots            = 0.3;
 extern double    TPinMoney       = 30;          //Net TP (money)
-extern int       intSL           = 6;            //止损点数，不用加0
+extern int       intSL           = 5;            //止损点数，不用加0
 extern double    distance        = 5;   //加仓间隔点数
 
 extern double    levelHigh      = 90;
@@ -103,15 +103,24 @@ void OnTick()
  //信号检测
 string signal()
 {
-   double fast[15];
-   double slow[15];
+   double fast[5];
+   double slow[5];
    int j;
-   for( j=0;j<15;j++) {
+   for( j=0;j<5;j++) {
       fast[j] = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, j+1);
    }
-   for( j=0;j<15;j++) {
+   for( j=0;j<5;j++) {
       slow[j] = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, j+1);
    }
+   if(fast[1]>89 && fast[2]<fast[1] && fast[3]<fast[2] && fast[4]<fast[3] && fast[4]<60){
+         Print("signal=>down");
+         return "down";
+   }
+   if(fast[1]<11 && fast[2]>fast[1] && fast[3]>fast[2] && fast[4]>fast[3] && fast[4]>40){
+         Print("signal=>down");
+         return "up";
+   }
+   /*
    double highest_fast=-1,highest_slow=-1;
    double lowest_fast=100,lowest_slow=100;
    int iH=-1,iL=-1,iOut=-1;
@@ -151,6 +160,7 @@ string signal()
          return "up";
       }
    }
+   */
   
    return "none";
 }
@@ -160,13 +170,13 @@ string signal()
 void checkEntryStoch(){
    if(isSignalOpenOrder)return;
    //if(lastTicketStatus == -1)return;   //最后一order在当前trend下发生了loss，则不open
-   if(strSignal == "up" && intTrigger<=1){
+   if(strSignal == "up" && intTrigger<1){
       Print("checkEntry:up");
       int low_index=iLowest(NULL,0,MODE_LOW,3,1);
       if(low_index!=-1){
           double val=Low[low_index];
           Print("checkEntry:low value =",val,";Ask=",Ask,";diff=",(Ask - val));
-          if(Ask - val >= 0.2*Pip && Ask - val <= 5*Pip){
+          if(Ask - val >= 0.2*Pip && Ask - val <= 1.5*Pip){
               Print("checkEntry:up < 2.5 pip");
               entry(strSignal, MathFloor((Ask - val)/Pip));
           }
@@ -175,12 +185,12 @@ void checkEntryStoch(){
       }
    }
    
-   if(strSignal == "down" && intTrigger<=1){
+   if(strSignal == "down" && intTrigger<1){
       Print("checkEntry:down");
       int high_index=iHighest(NULL,0,MODE_HIGH,3,1);
       if(high_index!=-1){
           double val=High[high_index];
-          if(val - Bid >= 0.2*Pip && val - Bid <= 5*Pip){
+          if(val - Bid >= 0.2*Pip && val - Bid <= 1.5*Pip){
                Print("checkEntry:down < 2.5 pip");
               entry(strSignal, MathFloor((val - Bid)/Pip));
           }
@@ -228,6 +238,8 @@ void tpMgr(){
    datetime dt,dtNow;
    double fast1 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 1);
    double slow1 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 1);
+   double fast2 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_MAIN, 2);
+   double slow2 = iStochastic(NULL, 0, 8, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 2);
    for(int cnt=0;cnt<OrdersTotal();cnt++){
       OrderSelect(cnt,SELECT_BY_POS,MODE_TRADES);
       if(OrderType()<=OP_SELL &&
@@ -246,7 +258,13 @@ void tpMgr(){
                if(tradeProfit > TPinMoney ){  //&& Bid -ma>30*Pip
                   objCTradeMgr.Close(tradeTicket);
                }
-               if( slow1 - fast1 >=3){
+               if(pass >= 2 && slow1 - fast1 >=3){
+                  objCTradeMgr.Close(tradeTicket);
+               }
+               if(fast1 > 80){
+                  objCTradeMgr.Close(tradeTicket);
+               }
+               if(pass >= 2 && fast2-fast1>=3){
                   objCTradeMgr.Close(tradeTicket);
                }
                
@@ -257,7 +275,13 @@ void tpMgr(){
                if(tradeProfit > TPinMoney ){  //&& ma - Ask>30*Pip
                   objCTradeMgr.Close(tradeTicket);
                }
-               if(fast1 - slow1>=3){
+               if(pass >=2 && fast1 - slow1>=3){
+                  objCTradeMgr.Close(tradeTicket);
+               }
+               if(fast1 <20){
+                  objCTradeMgr.Close(tradeTicket);
+               }
+               if(pass >= 2 && fast1-fast2>=3){
                   objCTradeMgr.Close(tradeTicket);
                }
             }
